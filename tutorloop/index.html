@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TutorLoop – Session notes to parent update in 30 seconds</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#faf8f4;--card:#fff;--ink:#1d2433;--mute:#667085;--line:#e5e1d8;--accent:#2f6f5e;--accent-ink:#fff;--soft:#e8f2ee}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15181d;--card:#1e2229;--ink:#eceff4;--mute:#98a2b3;--line:#2f3540;--accent:#5fb89f;--accent-ink:#0c1a15;--soft:#22322d}}
+:root[data-theme="dark"]{--bg:#15181d;--card:#1e2229;--ink:#eceff4;--mute:#98a2b3;--line:#2f3540;--accent:#5fb89f;--accent-ink:#0c1a15;--soft:#22322d}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:24px 16px 64px}
+h1{font-family:Georgia,"Times New Roman",serif;font-size:2rem;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mute);margin:0 0 24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}}
+label{display:block;font-size:.8rem;font-weight:600;color:var(--mute);margin:0 0 4px;text-transform:uppercase;letter-spacing:.04em}
+input,select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:10px 12px}
+textarea{min-height:150px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.full{grid-column:1/-1}
+button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:9px 14px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600;padding:12px 20px;width:100%}
+button:disabled{opacity:.6;cursor:wait}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+.tabs button[aria-selected="true"]{background:var(--soft);border-color:var(--accent);font-weight:600}
+.out{white-space:pre-wrap}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.prob{padding:10px 0;border-bottom:1px solid var(--line)}
+.prob:last-child{border:0}
+.ans{color:var(--mute);font-size:.9rem}
+.err{color:#b42318;margin-top:10px}
+.note{font-size:.8rem;color:var(--mute);text-align:center;margin-top:20px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TutorLoop</h1>
+  <p class="sub">Paste rough session notes. Get a parent update, targeted practice, and next-session plan.</p>
+
+  <div class="card">
+    <div class="grid">
+      <div><label for="student">Student first name</label><input id="student" placeholder="Maya"></div>
+      <div><label for="parent">Parent name (optional)</label><input id="parent" placeholder="Mr. Kim"></div>
+      <div><label for="subject">Subject and level</label><input id="subject" placeholder="Algebra 1, Grade 8"></div>
+      <div><label for="tutor">Your name</label><input id="tutor" placeholder="Ms. Lee"></div>
+      <div><label for="tone">Tone</label>
+        <select id="tone"><option>Warm and encouraging</option><option>Professional and concise</option><option>Direct and honest</option></select></div>
+      <div><label for="lang">Output language</label>
+        <select id="lang"><option>English</option><option>Korean</option><option>Spanish</option><option>Chinese (Simplified)</option><option>Japanese</option><option>French</option><option>Arabic</option><option>Hindi</option></select></div>
+      <div><label for="count">Practice problems</label>
+        <select id="count"><option>5</option><option selected>8</option><option>10</option></select></div>
+      <div><label for="diff">Practice difficulty</label>
+        <select id="diff"><option>Same level as session</option><option>Slightly easier (build confidence)</option><option>Slightly harder (stretch)</option></select></div>
+      <div class="full"><label for="code">Beta access code</label><input id="code" placeholder="Ask the person who invited you"></div>
+      <div class="full"><label for="notes">Session notes (messy is fine, or paste a voice transcript)</label>
+        <textarea id="notes" placeholder="Worked on solving two-step equations. Got the basic ones fast but keeps forgetting to flip the sign when subtracting negatives. Distracted last 10 min. Homework was done. Test on Friday."></textarea></div>
+    </div>
+    <div style="margin-top:14px"><button class="primary" id="go">Generate</button></div>
+    <div class="err hide" id="err"></div>
+  </div>
+
+  <div class="card hide" id="result">
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-t="update">Parent update</button>
+      <button role="tab" aria-selected="false" data-t="practice">Practice set</button>
+      <button role="tab" aria-selected="false" data-t="plan">Next session</button>
+    </div>
+    <div id="pane"></div>
+    <div class="bar">
+      <button id="copy">Copy this tab</button>
+      <button id="dl">Download all (.txt)</button>
+    </div>
+  </div>
+  <p class="note">AI-generated. Review before sending to parents. Nothing is stored on our side.</p>
+</div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var data=null,tab="update";
+  function esc(s){var d=document.createElement("div");d.textContent=s==null?"":String(s);return d.innerHTML}
+  function render(){
+    if(!data)return;var p=$("pane");
+    if(tab==="update"){p.innerHTML='<div><strong>'+esc(data.subject_line)+'</strong></div><div class="out" style="margin-top:8px">'+esc(data.parent_update)+'</div>'}
+    else if(tab==="practice"){p.innerHTML=(data.practice||[]).map(function(x,i){return '<div class="prob"><div><strong>'+(i+1)+'.</strong> '+esc(x.q)+'</div><div class="ans">Answer: '+esc(x.a)+'</div></div>'}).join("")}
+    else{p.innerHTML='<ol style="padding-left:20px;margin:0">'+(data.plan||[]).map(function(x){return '<li style="margin-bottom:6px">'+esc(x)+'</li>'}).join("")+'</ol>'}
+    document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.t===tab)});
+  }
+  function textFor(t){
+    if(!data)return"";
+    if(t==="update")return data.subject_line+"\n\n"+data.parent_update;
+    if(t==="practice")return(data.practice||[]).map(function(x,i){return (i+1)+". "+x.q}).join("\n\n")+"\n\nANSWER KEY\n"+(data.practice||[]).map(function(x,i){return (i+1)+". "+x.a}).join("\n");
+    return(data.plan||[]).map(function(x,i){return (i+1)+". "+x}).join("\n");
+  }
+  document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){tab=b.dataset.t;render()}});
+  $("go").onclick=async function(){
+    var err=$("err");err.classList.add("hide");
+    if($("notes").value.trim().length<20){err.textContent="Add a few sentences of session notes first.";err.classList.remove("hide");return}
+    var btn=$("go");btn.disabled=true;btn.textContent="Generating\u2026";
+    try{
+      var body={};["student","parent","subject","tutor","tone","lang","count","diff","notes"].forEach(function(k){body[k]=$(k).value});
+      var r=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json","x-access-code":$("code").value},body:JSON.stringify(body)});
+      var j=await r.json();
+      if(!r.ok)throw new Error(j.error||"Request failed");
+      data=j;$("result").classList.remove("hide");tab="update";render();$("result").scrollIntoView({behavior:"smooth"});
+    }catch(e){err.textContent=e.message||"Something went wrong. Please try again.";err.classList.remove("hide")}
+    btn.disabled=false;btn.textContent="Generate";
+  };
+  $("copy").onclick=function(){
+    var t=textFor(tab),b=$("copy");
+    navigator.clipboard.writeText(t).then(function(){b.textContent="Copied";setTimeout(function(){b.textContent="Copy this tab"},1500)});
+  };
+  $("dl").onclick=function(){
+    var all="PARENT UPDATE\n\n"+textFor("update")+"\n\n---\nPRACTICE SET\n\n"+textFor("practice")+"\n\n---\nNEXT SESSION PLAN\n\n"+textFor("plan");
+    var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([all],{type:"text/plain"}));a.download=($("student").value||"session")+"-summary.txt";a.click();
+  };
+})();
+</script>
+</body>
+</html>
